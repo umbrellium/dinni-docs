@@ -1,0 +1,330 @@
+swagger: '2.0'
+schemes:
+  - https
+host: wearaq.herokuapp.com
+basePath: /api
+info:
+  description: |
+    Simple HTTP API for the server that provides back end functionality for WearAQ Phase 2.
+  version: 1.0.0
+  title: WearAQ
+  x-logo:
+    url: 'https://apis.guru/openapi-template/logo.png'
+produces:
+  - application/json
+  - text/csv
+consumes:
+  - application/json
+tags:
+  - name: Workshop
+    description: Workshop operations
+securityDefinitions:
+  bearer:
+    type: apiKey
+    in: header
+    name: Authorization
+    description: |
+      Clients must present their API key in the form of a standard `Authorization` header of the form: `Bearer <apiKey>`. Currently there is no mechanism for generating new api keys. Please see dev team to obtain one.
+parameters:
+  workshopID:
+    name: id
+    in: path
+    description: The ID of a workshop
+    required: true
+    type: string
+paths:
+  /workshops:
+    post:
+      tags:
+        - Workshop
+      summary: Create a workshop
+      description: Create a new workshop
+      operationId: createWorkshop
+      security:
+        - bearer: []
+      parameters:
+        - name: workshop
+          in: body
+          description: The new fields for the workshop
+          required: true
+          schema:
+            $ref: '#/definitions/Workshop'
+      responses:
+        '202':
+          description: Success
+          headers:
+            Content-Location:
+              type: string
+              description: |
+                This header returns a location which the caller can poll to check on whether a workshop has been successfully initialized.
+          schema:
+            $ref: '#/definitions/Workshop'
+        '400':
+          $ref: '#/responses/BadRequest'
+  '/workshops/{id}':
+    get:
+      tags:
+        - Workshop
+      summary: Get workshop by ID
+      description: |
+        This endpoint returns a workshop identified by the ID parameter. If a workshop is not yet ready it will not be available at this URL, and the request will return a 404.
+      operationId: getWorkshopById
+      parameters:
+        - $ref: '#/parameters/workshopID'
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/Workshop'
+        '404':
+          $ref: '#/responses/NotFound'
+    patch:
+      tags:
+        - Workshop
+      summary: Update a workshop
+      description: |
+        Update the writeable properties of a workshop identified by the ID parameter.
+      operationId: patchWorkshopById
+      parameters:
+        - $ref: '#/parameters/workshopID'
+        - name: workshop
+          in: body
+          description: The updated fields for the workshop
+          required: true
+          schema:
+            $ref: '#/definitions/Workshop'
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/Workshop'
+        '404':
+          $ref: '#/responses/NotFound'
+    delete:
+      tags:
+        - Workshop
+      summary: Delete a workshop
+      description: |
+        Delete a workshop identified by the ID parameter.
+      operationId: deleteWorkshopById
+      parameters:
+        - $ref: '#/parameters/workshopID'
+      security:
+        - bearer: []
+      responses:
+        '204':
+          description: Success
+        '404':
+          $ref: '#/responses/NotFound'
+  '/workshops/{id}/activate':
+    post:
+      tags:
+        - Workshop
+      summary: Activate a workshop
+      description: |
+        Mark a workshop as active. This causes all new measurements and perceptions to be attached to this workshop, and also sets all other workshops to be inactive.
+      operationId: activateWorkshopById
+      parameters:
+        - $ref: '#/parameters/workshopID'
+      security:
+        - bearer: []
+      responses:
+        '204':
+          description: Success
+        '404':
+          $ref: '#/responses/NotFound'
+  '/workshops/{id}/deactivate':
+    post:
+      tags:
+        - Workshop
+      summary: Deactivate a workshop
+      description: |
+        Mark a workshop as finished. This causes all new measurements and perceptions to no longer be attached to this workshop; in fact if no workshop is active all incoming values will be discarded.
+      operationId: deactivateWorkshopById
+      parameters:
+        - $ref: '#/parameters/workshopID'
+      security:
+        - bearer: []
+      responses:
+        '204':
+          description: Success
+        '404':
+          $ref: '#/responses/NotFound'
+  '/workshops/{id}/run_model':
+    post:
+      tags:
+        - Workshop
+      summary: Run ML model
+      description: |
+        This command tells the server to run the machine learning algorithm for the current active workshop, which should generate a new set of locations for the workshop. These new locations are returned in the response body for this operation
+      operationId: runModelById
+      parameters:
+        - $ref: '#/parameters/workshopID'
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/Workshop'
+        '404':
+          $ref: '#/responses/NotFound'
+  '/workshops/pending/{id}':
+    get:
+      tags:
+        - Workshop
+      summary: Get pending workshop by ID
+      description: |
+        This endpoint returns a pending workshop identified by the ID parameter.
+
+        Once the workshop is ready (i.e. background processes have completed to get the initial measurements and generate the initial set of locations), its ready field will be set to true, and requests for that workshop to this URL will return a `303 See Other` response with the `Location` header set to the workshops new location.
+      operationId: getPendingWorkshopById
+      parameters:
+        - $ref: '#/parameters/workshopID'
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: '#/definitions/Workshop'
+        '303':
+          description: Ready
+          headers:
+            Location:
+              type: string
+              description: The location of the workshop now it is ready
+        '404':
+          $ref: '#/responses/NotFound'
+  /images:
+    post:
+      tags:
+        - Perception
+      summary: Accept image uploads
+      description: |
+        Endpoint that accepts multipart HTTP post requests in order for the client apps to be able to upload images for storage and processing.
+      operationId: uploadImage
+      security:
+        - bearer: []
+      consumes:
+        - multipart/form-data
+      parameters:
+        - in: formData
+          name: imgFile
+          type: file
+          description: The image file to to upload
+          x-mimetype: image/jpg
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad Request
+definitions:
+  Longitude:
+    description: Longitude expressed as a decimal value.
+    type: number
+    minimum: -180
+    maximum: 180
+    example: -2.4617
+  Latitude:
+    description: Latitude expressed as a decimal value.
+    type: number
+    minimum: -90
+    maximum: 90
+    example: 55.2712
+  WorkshopID:
+    description: An string identifier for a workshop
+    type: string
+    example: Hs8djg
+    readOnly: true
+  Location:
+    description: 'Location for a workshop. A workshop comprises 8 or 9 initial locations to which participants walk, as well as 3 later ones generated in real time by the model based on new data.'
+    type: object
+    required:
+      - lon
+      - lat
+      - type
+    properties:
+      lon:
+        $ref: '#/definitions/Longitude'
+      lat:
+        $ref: '#/definitions/Latitude'
+      type:
+        type: string
+        description: The type of the location
+        enum:
+          - initial
+          - realtime
+        default: initial
+  Workshop:
+    type: object
+    required:
+      - name
+      - lon
+      - lat
+    properties:
+      id:
+        $ref: '#/definitions/WorkshopID'
+      name:
+        description: The name of the workshop
+        type: string
+        example: Workshop 1
+      description:
+        description: Optional description of the workshop
+        type: string
+        example: The first workshop.
+      lon:
+        $ref: '#/definitions/Longitude'
+      lat:
+        $ref: '#/definitions/Latitude'
+      ready:
+        description: |
+          Read only boolean flag indicating that a workshop is ready
+        type: boolean
+        example: false
+        readOnly: true
+      active:
+        description: |
+          Read only boolean flag indicating whether or not a workshop is currently active. Only a single workshop can be active at any one time.
+        type: boolean
+        example: true
+        readOnly: true
+      createdAt:
+        description: Read only value recording when the workshop was created.
+        type: string
+        example: '2018-02-01T23:06:23Z'
+        format: date-time
+        readOnly: true
+      locations:
+        description: |
+          List of locations for a workshop
+        type: array
+        readOnly: true
+        items:
+          $ref: '#/definitions/Location'
+  Error:
+    type: object
+    required:
+      - error
+    properties:
+      error:
+        type: string
+        description: Message describing the error
+        example: Unable to locate resource
+responses:
+  NotFound:
+    description: Resource not found
+    schema:
+      $ref: '#/definitions/Error'
+  BadRequest:
+    description: Bad request
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        error: |
+          Missing required parameter: 'lon'
