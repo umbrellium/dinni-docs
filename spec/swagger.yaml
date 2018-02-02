@@ -56,7 +56,7 @@ securityDefinitions:
       Clients must present their API key in the form of a standard `Authorization` header of the form: `Bearer <apiKey>`. Currently there is no mechanism for generating new api keys. Please see dev team to obtain one.
 
 parameters:
-  workshopId:
+  workshopID:
     name: id
     in: path
     description: The ID of a workshop
@@ -105,7 +105,7 @@ paths:
         This endpoint returns a workshop identified by the ID parameter. If a workshop is not yet ready it will not be available at this URL, and the request will return a 404.
       operationId: getWorkshopById
       parameters:
-        - $ref: '#/parameters/workshopId'
+        - $ref: '#/parameters/workshopID'
       security:
         - bearer: []
       responses: # list of responses
@@ -124,7 +124,7 @@ paths:
         Update the writeable properties of a workshop identified by the ID parameter.
       operationId: patchWorkshopById
       parameters:
-        - $ref: '#/parameters/workshopId'
+        - $ref: '#/parameters/workshopID'
         - name: workshop
           in: body
           description: 'The updated fields for the workshop'
@@ -149,7 +149,7 @@ paths:
         Delete a workshop identified by the ID parameter.
       operationId: deleteWorkshopById
       parameters:
-        - $ref: '#/parameters/workshopId'
+        - $ref: '#/parameters/workshopID'
       security:
         - bearer: []
       responses: # list of responses
@@ -167,7 +167,7 @@ paths:
         Mark a workshop as active. This causes all new measurements and perceptions to be attached to this workshop, and also sets all other workshops to be inactive.
       operationId: activateWorkshopById
       parameters:
-        - $ref: '#/parameters/workshopId'
+        - $ref: '#/parameters/workshopID'
       security:
         - bearer: []
       responses:
@@ -185,7 +185,7 @@ paths:
         Mark a workshop as finished. This causes all new measurements and perceptions to no longer be attached to this workshop; in fact if no workshop is active all incoming values will be discarded.
       operationId: finishWorkshopById
       parameters:
-        - $ref: '#/parameters/workshopId'
+        - $ref: '#/parameters/workshopID'
       security:
         - bearer: []
       responses:
@@ -204,7 +204,7 @@ paths:
 
       operationId: runModelById
       parameters:
-        - $ref: '#/parameters/workshopId'
+        - $ref: '#/parameters/workshopID'
       security:
         - bearer: []
       responses:
@@ -226,7 +226,7 @@ paths:
         Once the workshop is ready (i.e. background processes have completed to get the initial measurements and generate the initial set of locations), its ready field will be set to true, and requests for that workshop to this URL will return a `303 See Other` response with the `Location` header set to the workshops new location.
       operationId: getPendingWorkshopById
       parameters:
-        - $ref: '#/parameters/workshopId'
+        - $ref: '#/parameters/workshopID'
       security:
         - bearer: []
       responses: # list of responses
@@ -283,6 +283,12 @@ definitions:
     minimum: -90
     maximum: 90
     example: 55.2712
+    
+  WorkshopID:
+    description: An string identifier for a workshop
+    type: string
+    example: Hs8djg
+    readOnly: true
 
   Location:
     description: Location for a workshop. A workshop comprises 8 or 9 initial locations to which participants walk, as well as 3 later ones generated in real time by the model based on new data.
@@ -311,6 +317,8 @@ definitions:
       - lon
       - lat
     properties:
+      id:
+        $ref: '#/definitions/WorkshopID'
       name:
         description: The name of the workshop
         type: string
