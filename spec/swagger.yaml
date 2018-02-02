@@ -176,14 +176,14 @@ paths:
         '404':
           $ref: '#/responses/NotFound'
 
-  '/workshops/{id}/finish':
+  '/workshops/{id}/deactivate':
     post:
       tags:
         - Workshop
-      summary: Finish a workshop
+      summary: Deactivate a workshop
       description: |
         Mark a workshop as finished. This causes all new measurements and perceptions to no longer be attached to this workshop; in fact if no workshop is active all incoming values will be discarded.
-      operationId: finishWorkshopById
+      operationId: deactivateWorkshopById
       parameters:
         - $ref: '#/parameters/workshopID'
       security:
