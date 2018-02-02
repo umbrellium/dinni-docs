@@ -20,7 +20,7 @@ info:
   title: WearAQ # Replace with your API title
   # Keep it simple. Don't add "API" or verison at the end of the string.
 
-  
+
   x-logo:
     url: 'https://apis.guru/openapi-template/logo.png'
 
@@ -31,9 +31,9 @@ produces:
   - application/json
   - text/csv
   # you can add any mime type your API produces to the list
-  
+
 consumes:
-  # List of mime types your API endpoins consumes.
+  # List of mime types your API endpoint consumes.
   # This is a global default. You can OVERWRITE it in each specific operation.
   # Remove the ones not supported by your API
   - application/json
@@ -53,7 +53,7 @@ securityDefinitions:
     in: header # Where API key will be passed: header or query
     name: Authorization # API key paramteer name
     description: |
-      Clients must present their API key in the form of a standard `Authorization` header of the form: `Bearer <apiKey>`.
+      Clients must present their API key in the form of a standard `Authorization` header of the form: `Bearer <apiKey>`. Currently there is no mechanism for generating new api keys. Please see dev team to obtain one.
 
 parameters:
   workshopId:
@@ -62,9 +62,9 @@ parameters:
     description: The ID of a workshop
     required: true
     type: string
-    
+
 # Holds the relative paths to the individual endpoints. The path is appended to the
-# basePath in order to construct the full URL. 
+# basePath in order to construct the full URL.
 paths:
   '/workshops':
     post:
@@ -94,15 +94,15 @@ paths:
             $ref: '#/definitions/Workshop'
         '400':
           $ref: '#/responses/BadRequest'
-            
-      
+
+
   '/workshops/{id}':
     get:
       tags:
         - Workshop
       summary: Get workshop by ID
       description: |
-        This endpoint returns a workshop identified by the ID parameter. If a workshop is not yet ready it will not be available at this URL.
+        This endpoint returns a workshop identified by the ID parameter. If a workshop is not yet ready it will not be available at this URL, and the request will return a 404.
       operationId: getWorkshopById
       parameters:
         - $ref: '#/parameters/workshopId'
@@ -115,7 +115,7 @@ paths:
             $ref: '#/definitions/Workshop'
         '404':
           $ref: '#/responses/NotFound'
-          
+
     patch:
       tags:
         - Workshop
@@ -140,7 +140,7 @@ paths:
             $ref: '#/definitions/Workshop'
         '404':
           $ref: '#/responses/NotFound'
-          
+
     delete:
       tags:
         - Workshop
@@ -157,7 +157,7 @@ paths:
           description: Success
         '404':
           $ref: '#/responses/NotFound'
-          
+
   '/workshops/{id}/activate':
     post:
       tags:
@@ -175,7 +175,7 @@ paths:
           description: Success
         '404':
           $ref: '#/responses/NotFound'
-          
+
   '/workshops/{id}/finish':
     post:
       tags:
@@ -193,7 +193,28 @@ paths:
           description: Success
         '404':
           $ref: '#/responses/NotFound'
-          
+
+  '/workshops/{id}/run_model':
+    post:
+      tags:
+        - Workshop
+      summary: Run ML model
+      description: |
+        This command tells the server to run the machine learning algorithm for the current active workshop, which should generate a new set of locations for the workshop. These new locations are returned in the response body for this operation
+
+      operationId: runModelById
+      parameters:
+        - $ref: '#/parameters/workshopId'
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/Workshop'
+        '404':
+          $ref: '#/responses/NotFound'
+
   '/workshops/pending/{id}':
     get:
       tags:
@@ -201,7 +222,7 @@ paths:
       summary: Get pending workshop by ID
       description: |
         This endpoint returns a pending workshop identified by the ID parameter.
-        
+
         Once the workshop is ready (i.e. background processes have completed to get the initial measurements and generate the initial set of locations), its ready field will be set to true, and requests for that workshop to this URL will return a `303 See Other` response with the `Location` header set to the workshops new location.
       operationId: getPendingWorkshopById
       parameters:
@@ -221,8 +242,32 @@ paths:
               description: The location of the workshop now it is ready
         '404':
           $ref: '#/responses/NotFound'
-      
-    
+
+  '/images':
+    post:
+      tags:
+        - Perception
+      summary: Accept image uploads
+      description: |
+        Endpoint that accepts multipart HTTP post requests in order for the client apps to be able to upload images for storage and processing.
+      operationId: uploadImage
+      security:
+        - bearer: []
+      consumes:
+        - multipart/form-data
+      parameters:
+        - in: formData
+          name: imgFile
+          type: file
+          description: The image file to to upload
+          x-mimetype: image/jpg
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad Request
+
+
 # These data types can be primitives, arrays or models.
 definitions:
   Longitude:
@@ -231,14 +276,34 @@ definitions:
     minimum: -180
     maximum: 180
     example: -2.4617
-    
+
   Latitude:
     description: Latitude expressed as a decimal value.
     type: number
     minimum: -90
     maximum: 90
     example: 55.2712
-    
+
+  Location:
+    description: Location for a workshop. A workshop comprises 8 or 9 initial locations to which participants walk, as well as 3 later ones generated in real time by the model based on new data.
+    type: object
+    required:
+      - lon
+      - lat
+      - type
+    properties:
+      lon:
+        $ref: '#/definitions/Longitude'
+      lat:
+        $ref: '#/definitions/Latitude'
+      type:
+        type: string
+        description: The type of the location
+        enum:
+          - initial
+          - realtime
+        default: initial
+
   Workshop:
     type: object
     required:
@@ -276,8 +341,15 @@ definitions:
         example: '2018-02-01T23:06:23Z'
         format: date-time
         readOnly: true
-      
-        
+      locations:
+        description: |
+          List of locations for a workshop
+        type: array
+        readOnly: true
+        items:
+          $ref: '#/definitions/Location'
+
+
   Error:
     type: object
     required:
