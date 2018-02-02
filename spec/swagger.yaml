@@ -5,242 +5,300 @@ swagger: '2.0'
 # You should specify common part of your endpoints in the following format:
 #   <schemes>://<host><basepath>
 schemes:
-  - http # Remove if your API doesn't support HTTP
   - https # Remove if your API donsn't support HTTPS
-host: example.com # Replace with your hostname. You can also specify port e.g. example.com:777
-basePath: /api/v1 # Replace with your basePath. Note: SHOULD begin with '/'.
+host: wearaq.herokuapp.com # Replace with your hostname. You can also specify port e.g. example.com:777
+basePath: /api # Replace with your basePath. Note: SHOULD begin with '/'.
 info:
   # Describe your API here, you can use GFM (https://guides.github.com/features/mastering-markdown) here
   description: |
-    This is an **example** API to demontstrate features of OpenAPI specification
-    # Introduction
-    This specification is intended to to be a good starting point for describint your API in 
-    [OpenAPI/Swagger format](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md).
-    It also demonstrates features of [generator-openapi-repo](https://github.com/Rebilly/generator-openapi-repo) tool and 
-    [ReDoc](https://github.com/Rebilly/ReDoc) documentation engine. So beyond the standard OpenAPI syntax we use a few 
-    [vendor extensions](https://github.com/Rebilly/ReDoc/blob/master/docs/redoc-vendor-extensions.md).
-    
-    # OpenAPI Specification
-    The goal of The OpenAPI Specification is to define a standard, language-agnostic interface to REST APIs which
-    allows both humans and computers to discover and understand the capabilities of the service without access to source
-    code, documentation, or through network traffic inspection. When properly defined via OpenAPI, a consumer can 
-    understand and interact with the remote service with a minimal amount of implementation logic. Similar to what
-    interfaces have done for lower-level programming, OpenAPI removes the guesswork in calling the service.
+    Simple HTTP API for the server that provides back end functionality for WearAQ Phase 2.
 
   version: '1.0.0' # Your API version
   # It can be any string but it is better to use semantic versioning: http://semver.org/
   # Warning: OpenAPI require version to be string, but without quotation YAML can recognize it as number.
 
-  title: Example.com # Replace with your API title
+  title: WearAQ # Replace with your API title
   # Keep it simple. Don't add "API" or verison at the end of the string.
 
-  termsOfService: 'https://example.com/terms/' # [Optional] Replace with an URL to your ToS
-  contact:
-    email: contact@example.com # [Optional] Replace with your contact email
-    url: 'http://example.com/contact' # [Optional] Replace with link to your contact form
-  license:
-    name: Apache 2.0
-    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+  
   x-logo:
     url: 'https://apis.guru/openapi-template/logo.png'
-externalDocs:
-  description: Find out how to create Github repo for your OpenAPI spec.
-  url: 'https://github.com/Rebilly/generator-openapi-repo'
+
 produces:
   # List of mime types your API endpoins can return.
   # This is a global default. You can OVERWRITE it in each specific operation.
   # Remove the ones not used in your API
   - application/json
-  - application/xml
   - text/csv
   # you can add any mime type your API produces to the list
+  
 consumes:
   # List of mime types your API endpoins consumes.
   # This is a global default. You can OVERWRITE it in each specific operation.
   # Remove the ones not supported by your API
   - application/json
-  - application/xml
   # you can add any mime type your API consumes to the list
 
 # A list of tags used by the specification with additional metadata.
 # The order of the tags can be used to reflect on their order by the parsing tools.
 tags:
-  - name: Echo
-    description: Example echo operations
-  - name: User
-    description: Operations about user
+  - name: Workshop
+    description: Workshop operations
+
 # Security scheme definitions that can be used across the specification.
 securityDefinitions:
-  main_auth: # security definition name (you can name it as you want)
-    type: oauth2 # authorization type, one of: oauth2, basic, apiKey
-    # the following options are specific to oauth2 type
-    authorizationUrl: 'http://example.com/api/oauth/dialog'
-    flow: implicit
-    scopes:
-      'read:users': read users info
-      'write:users': modify or remove users
-  api_key: # security definition name (you can name it as you want)
+  bearer: # security definition name (you can name it as you want)
     type: apiKey
     # The following options are specific to apiKey type
     in: header # Where API key will be passed: header or query
-    name: api_key # API key paramteer name
-  basic_auth: # security definition name (you can name it as you want)
-    type: basic
+    name: Authorization # API key paramteer name
+    description: |
+      Clients must present their API key in the form of a standard `Authorization` header of the form: `Bearer <apiKey>`.
 
+parameters:
+  workshopId:
+    name: id
+    in: path
+    description: The ID of a workshop
+    required: true
+    type: string
+    
 # Holds the relative paths to the individual endpoints. The path is appended to the
 # basePath in order to construct the full URL. 
 paths:
-  '/users/{username}': # path parameter in curly braces
-    # documentation for GET operation for this path
-    
-    # parameters list that are used with each operation for this path
-    parameters:
-      - name: pretty_print
-        in: query # place where paramter is passed: path, header, query or body, formData
-        description: Pretty print response
-        # type of the paramter: string, number, integer, boolean, array
-        type: boolean
+  '/workshops':
+    post:
+      tags:
+        - Workshop
+      summary: Create a workshop
+      description: Create a new workshop
+      operationId: createWorkshop
+      security:
+        - bearer: []
+      parameters:
+        - name: workshop
+          in: body
+          description: 'The new fields for the workshop'
+          required: true
+          schema:
+            $ref: '#/definitions/Workshop'
+      responses:
+        '202':
+          description: Success
+          headers:
+            Content-Location:
+              type: string
+              description: |
+                This header returns a location which the caller can poll to check on whether a workshop has been successfully initialized.
+          schema:
+            $ref: '#/definitions/Workshop'
+        '400':
+          $ref: '#/responses/BadRequest'
+            
+      
+  '/workshops/{id}':
     get:
       tags:
-        - User
-      
-      # summary is up to 120 symbold but we recommend to be shortest as possible
-      summary: Get user by user name
-      
-      # you can use GFM in operation description too: https://guides.github.com/features/mastering-markdown
-      description: | 
-        Some description of the operation. 
-        You can use `markdown` here.
-      
-      # operationId should be unique across the whole specification
-      operationId: getUserByName
-      
-      # list of parameters for the operation
+        - Workshop
+      summary: Get workshop by ID
+      description: |
+        This endpoint returns a workshop identified by the ID parameter. If a workshop is not yet ready it will not be available at this URL.
+      operationId: getWorkshopById
       parameters:
-        - name: username
-          in: path
-          description: 'The name that needs to be fetched'
-          required: true
-          type: string
-        - name: with_email
-          in: query
-          description: Filter users without email
-          type: boolean
-      
-      # security schemas applied to this operation
+        - $ref: '#/parameters/workshopId'
       security:
-        - main_auth:
-          - 'read:users' # for auth2 provide list of scopes here
-        - api_key: []
-      # overwriting default global produces
-      produces:
-        - application/json
+        - bearer: []
       responses: # list of responses
         '200':
           description: Success
           schema: # response schema can be specified for each response
-            $ref: '#/definitions/User'
-          examples:
-          # repsonse samples for each type operation produces
-            application/json:
-              username: user1
-              email: user@example.com
-        '403':
-          description: Forbidden
+            $ref: '#/definitions/Workshop'
         '404':
-          description: User not found
-    # documentation for PUT operation for this path
-    put:
+          $ref: '#/responses/NotFound'
+          
+    patch:
       tags:
-        - User
-      summary: Updated user
-      description: This can only be done by the logged in user.
-      operationId: updateUser
-      produces:
-        - application/json
+        - Workshop
+      summary: Update a workshop
+      description: |
+        Update the writeable properties of a workshop identified by the ID parameter.
+      operationId: patchWorkshopById
       parameters:
-        - name: username
-          in: path
-          description: The name that needs to be updated
+        - $ref: '#/parameters/workshopId'
+        - name: workshop
+          in: body
+          description: 'The updated fields for the workshop'
           required: true
-          type: string
-        - in: body
-          name: body
-          description: Updated user object
-          required: true
-          # for body parameter you should specify request schema instead of type
           schema:
-            $ref: '#/definitions/User'
+            $ref: '#/definitions/Workshop'
       security:
-        - main_auth:
-          - 'write:users'
-      responses:
+        - bearer: []
+      responses: # list of responses
         '200':
-          description: OK
-        '400':
-          description: Invalid user supplied
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/Workshop'
         '404':
-          description: User not found
-  
-  '/echo':
+          $ref: '#/responses/NotFound'
+          
+    delete:
+      tags:
+        - Workshop
+      summary: Delete a workshop
+      description: |
+        Delete a workshop identified by the ID parameter.
+      operationId: deleteWorkshopById
+      parameters:
+        - $ref: '#/parameters/workshopId'
+      security:
+        - bearer: []
+      responses: # list of responses
+        '204':
+          description: Success
+        '404':
+          $ref: '#/responses/NotFound'
+          
+  '/workshops/{id}/activate':
     post:
       tags:
-        - Echo
-      summary: Echo test
-      description: Receive the exact message you've sent
-      operationId: echo
+        - Workshop
+      summary: Activate a workshop
+      description: |
+        Mark a workshop as active. This causes all new measurements and perceptions to be attached to this workshop, and also sets all other workshops to be inactive.
+      operationId: activateWorkshopById
       parameters:
-        - name: message
-          in: body
-          description: 'Echo payload'
-          required: true
-          schema:
-            type: string
-            example: 'Hello world!'
+        - $ref: '#/parameters/workshopId'
       security:
-        - api_key: []
+        - bearer: []
       responses:
+        '204':
+          description: Success
+        '404':
+          $ref: '#/responses/NotFound'
+          
+  '/workshops/{id}/finish':
+    post:
+      tags:
+        - Workshop
+      summary: Finish a workshop
+      description: |
+        Mark a workshop as finished. This causes all new measurements and perceptions to no longer be attached to this workshop; in fact if no workshop is active all incoming values will be discarded.
+      operationId: finishWorkshopById
+      parameters:
+        - $ref: '#/parameters/workshopId'
+      security:
+        - bearer: []
+      responses:
+        '204':
+          description: Success
+        '404':
+          $ref: '#/responses/NotFound'
+          
+  '/workshops/pending/{id}':
+    get:
+      tags:
+        - Workshop
+      summary: Get pending workshop by ID
+      description: |
+        This endpoint returns a pending workshop identified by the ID parameter.
+        
+        Once the workshop is ready (i.e. background processes have completed to get the initial measurements and generate the initial set of locations), its ready field will be set to true, and requests for that workshop to this URL will return a `303 See Other` response with the `Location` header set to the workshops new location.
+      operationId: getPendingWorkshopById
+      parameters:
+        - $ref: '#/parameters/workshopId'
+      security:
+        - bearer: []
+      responses: # list of responses
         '200':
-          description: 'OK'
-          examples:
-            'application/json': 'Hello world!'
-          schema:
-            type: string
-          # docuemnt headers for this repsonse
+          description: Success
+          schema: # response schema can be specified for each response
+            $ref: '#/definitions/Workshop'
+        '303':
+          description: Ready
           headers:
-            X-Rate-Limit: # Header name
-              type: integer # Header value type
-              format: int32 # Header value format
-              description: calls per hour allowed by the user
-            X-Expires-After:
+            Location:
               type: string
-              format: date-time
-              description: date in UTC when token expires
-# An object to hold data types that can be consumed and produced by operations.
+              description: The location of the workshop now it is ready
+        '404':
+          $ref: '#/responses/NotFound'
+      
+    
 # These data types can be primitives, arrays or models.
 definitions:
-  Email:
-    description: User email address
-    type: string
-    format: email
-    example: john.smith@example.com
-  User:
+  Longitude:
+    description: Longitude expressed as a decimal value.
+    type: number
+    minimum: -180
+    maximum: 180
+    example: -2.4617
+    
+  Latitude:
+    description: Latitude expressed as a decimal value.
+    type: number
+    minimum: -90
+    maximum: 90
+    example: 55.2712
+    
+  Workshop:
     type: object
+    required:
+      - name
+      - lon
+      - lat
     properties:
-      username:
-        description: User supplied username
+      name:
+        description: The name of the workshop
         type: string
-        minLength: 4
-        example: John78
-      firstName:
-        description: User first name
+        example: Workshop 1
+      description:
+        description: Optional description of the workshop
         type: string
-        minLength: 1
-        example: John
-      lastName:
-        description: User last name
+        example: The first workshop.
+      lon:
+        $ref: '#/definitions/Longitude'
+      lat:
+        $ref: '#/definitions/Latitude'
+      ready:
+        description: |
+          Read only boolean flag indicating that a workshop is ready
+        type: boolean
+        example: false
+        readOnly: true
+      active:
+        description: |
+          Read only boolean flag indicating whether or not a workshop is currently active. Only a single workshop can be active at any one time.
+        type: boolean
+        example: true
+        readOnly: true
+      createdAt:
+        description: Read only value recording when the workshop was created.
         type: string
-        minLength: 1
-        example: Smith
-      email:
-        $ref: '#/definitions/Email'
+        example: '2018-02-01T23:06:23Z'
+        format: date-time
+        readOnly: true
+      
+        
+  Error:
+    type: object
+    required:
+      - error
+    properties:
+      error:
+        type: string
+        description: Message describing the error
+        example: Unable to locate resource
+
+
+responses:
+  NotFound:
+    description: Resource not found
+    schema:
+      $ref: '#/definitions/Error'
+  BadRequest:
+    description: Bad request
+    schema:
+      $ref: '#/definitions/Error'
+    examples:
+      application/json:
+        error: |
+          Missing required parameter: 'lon'
